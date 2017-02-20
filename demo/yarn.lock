@@ -2932,6 +2932,9 @@ react-deep-force-update@^1.0.0:
   version "1.0.1"
   resolved "http://registry.npm.taobao.org/react-deep-force-update/download/react-deep-force-update-1.0.1.tgz#f911b5be1d2a6fe387507dd6e9a767aa2924b4c7"
 
+"react-native-rigo-fingerprint@file:../":
+  version "1.0.0"
+
 react-native@0.41.2:
   version "0.41.2"
   resolved "http://registry.npm.taobao.org/react-native/download/react-native-0.41.2.tgz#c6f486b8450a9909e6fed2dfd2c2af946563bf4f"

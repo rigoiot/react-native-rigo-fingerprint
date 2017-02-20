@@ -1,3 +1,5 @@
 rootProject.name = 'demo'
+include ':react-native-rigo-fingerprint'
+project(':react-native-rigo-fingerprint').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-rigo-fingerprint/android')
 
 include ':app'

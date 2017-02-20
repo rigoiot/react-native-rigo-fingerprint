@@ -12,6 +12,8 @@ import {
   View
 } from 'react-native';
 
+import RNRigoFingerprint from 'react-native-rigo-fingerprint'
+
 export default class demo extends Component {
   render() {
     return (
