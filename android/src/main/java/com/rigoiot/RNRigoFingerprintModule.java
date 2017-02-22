@@ -161,6 +161,27 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
     mCGfpInterface.fpiSetSleepTime(sleepTime);
   }
 
+  @ReactMethod
+  public void fpiDownVerify(String template, String feature) {
+    byte[] tpt = Base64.decode(template, Base64.DEFAULT);
+    byte[] ftr = Base64.decode(feature, Base64.DEFAULT);
+    mCGfpInterface.fpiDownVerify(tpt, ftr);
+  }
+
+  @ReactMethod
+  public void sysOneMatch(String template, String feature) {
+    byte[] tpt = Base64.decode(template, Base64.DEFAULT);
+    byte[] ftr = Base64.decode(feature, Base64.DEFAULT);
+    mCGfpInterface.sysOneMatch(tpt, ftr);
+  }
+
+  @ReactMethod
+  public void sysSearchMatch(int templateCount, String template, String feature, int[] templateID) {
+    byte[] tpt = Base64.decode(template, Base64.DEFAULT);
+    byte[] ftr = Base64.decode(feature, Base64.DEFAULT);
+    mCGfpInterface.sysSearchMatch(templateCount, tpt, ftr, templateID);
+  }
+
   // 蓝牙异步消息处理
   Handler mFpHandler = new Handler() {
     public void handleMessage(Message msg){
@@ -190,7 +211,7 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
             WritableMap map = Arguments.createMap();
             map.putInt("bytesLenFTR", bytesLenFTR);
             if (bytesLenFTR > 0) {
-              map.putString("fpFeature", Base64.encodeToString(fpFeature, Base64.NO_WRAP));
+              map.putString("fpFeature", Base64.encodeToString(fpFeature, Base64.DEFAULT));
             }
             mCb.invoke(msg.what, map);
           }
@@ -204,7 +225,7 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
             WritableMap map = Arguments.createMap();
             map.putInt("bytesLenTPT", bytesLenTPT);
             if (bytesLenTPT > 0) {
-              map.putString("fpTemplate", Base64.encodeToString(fpTemplate, Base64.NO_WRAP));
+              map.putString("fpTemplate", Base64.encodeToString(fpTemplate, Base64.DEFAULT));
             }
             mCb.invoke(msg.what, map);
           }
@@ -238,7 +259,7 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
             WritableMap map = Arguments.createMap();
             map.putInt("byteLenIMG", byteLenIMG);
             if (byteLenIMG > 0) {
-              map.putString("fpImage", Base64.encodeToString(fpImage, Base64.NO_WRAP));
+              map.putString("fpImage", Base64.encodeToString(fpImage, Base64.DEFAULT));
             }
             mCb.invoke(msg.what, map);
           }
@@ -251,7 +272,7 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
             WritableMap map = Arguments.createMap();
             map.putInt("bytesLenFTR", bytesLenFTR);
             if (bytesLenFTR > 0) {
-              map.putString("fpFeature", Base64.encodeToString(fpFeature, Base64.NO_WRAP));
+              map.putString("fpFeature", Base64.encodeToString(fpFeature, Base64.DEFAULT));
             }
             mCb.invoke(msg.what, map);
           }
@@ -265,7 +286,7 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
             WritableMap map = Arguments.createMap();
             map.putInt("bytesLenTPT", bytesLenTPT);
             if (bytesLenTPT > 0) {
-              map.putString("fpTemplate", Base64.encodeToString(fpTemplate, Base64.NO_WRAP));
+              map.putString("fpTemplate", Base64.encodeToString(fpTemplate, Base64.DEFAULT));
             }
             mCb.invoke(msg.what, map);
           }
