@@ -4,6 +4,7 @@ package com.rigoiot;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Base64;
+import android.os.Looper;
 
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.ReactApplicationContext;
@@ -183,7 +184,7 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
   }
 
   // 蓝牙异步消息处理
-  Handler mFpHandler = new Handler() {
+  Handler mFpHandler = new Handler(Looper.getMainLooper()) {
     public void handleMessage(Message msg){
       super.handleMessage(msg);
       switch(msg.what) {

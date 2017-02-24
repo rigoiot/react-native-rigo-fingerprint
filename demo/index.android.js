@@ -12,10 +12,13 @@ import {
   View
 } from 'react-native';
 
+import { Button } from 'antd-mobile';
+
 import RNRigoFingerprint from 'react-native-rigo-fingerprint'
 
 export default class demo extends Component {
   constructor(props) {
+    super(props)
     this.state = {
       template: null,
       feature: null,
@@ -28,19 +31,19 @@ export default class demo extends Component {
   }
 
   componentDidMount() {
-    RNRigoFingerprint.initialize((code, result) => {
-      this.setState({retCode: code})
-      switch (code) {
-        case 0xA4:
-          this.setState({error: result.error})
-          break;
-        case 0xA4:
-          this.setState({error: 0})
-          break;
-        default:
-
-      }
-    })
+    // RNRigoFingerprint.initialize((code, result) => {
+    //   this.setState({retCode: code})
+    //   switch (code) {
+    //     case 0xA4:
+    //       this.setState({error: result.error})
+    //       break;
+    //     case 0xA4:
+    //       this.setState({error: 0})
+    //       break;
+    //     default:
+    //
+    //   }
+    // })
   }
 
   render() {
@@ -56,16 +59,16 @@ export default class demo extends Component {
           Double tap R on your keyboard to reload,{'\n'}
           Shake or press menu button for dev menu
         </Text>
-        <Botton onClick={()=>{
-          RNRigoFingerprint.fpiOpenBT()
+        <Button onClick={()=>{
+          // RNRigoFingerprint.fpiOpenBT()
         }}>
           {'OpenBT'}
-        </Botton>
-        <Botton onClick={()=>{
-          fp.fpiOpenBT()
+        </Button>
+        <Button onClick={()=>{
+          // fp.fpiOpenBT()
         }}>
           {'OpenBT'}
-        </Botton>
+        </Button>
         <Text style={styles.instructions}>
           {`Result, code: ${this.state.code}, error: ${this.state.error}`}
         </Text>
