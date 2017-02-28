@@ -6,6 +6,7 @@ import android.os.Message;
 import android.support.annotation.Nullable;
 import android.util.Base64;
 import android.os.Looper;
+import android.os.Build;
 
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.ReactContext;
@@ -22,7 +23,7 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
 
   private final ReactApplicationContext reactContext;
 
-  private GfpInterface  mCGfpInterface;
+  private GfpInterface  mCGfpInterface = null;
 
   public RNRigoFingerprintModule(ReactApplicationContext reactContext) {
     super(reactContext);
@@ -34,9 +35,25 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
     return "RNRigoFingerprint";
   }
 
+  /**
+   * Utility methods related to physical devies and emulators.
+   */
+  private boolean isEmulator() {
+      return Build.FINGERPRINT.startsWith("generic")
+              || Build.FINGERPRINT.startsWith("unknown")
+              || Build.MODEL.contains("google_sdk")
+              || Build.MODEL.contains("Emulator")
+              || Build.MODEL.contains("Android SDK built for x86")
+              || Build.MANUFACTURER.contains("Genymotion")
+              || (Build.BRAND.startsWith("generic") && Build.DEVICE.startsWith("generic"))
+              || "google_sdk".equals(Build.PRODUCT);
+  }
+
   @ReactMethod
   public void init() {
-    mCGfpInterface = new GfpInterface(reactContext, mFpHandler);
+    if (!isEmulator()) {
+      mCGfpInterface = new GfpInterface(reactContext, mFpHandler);
+    }
   }
 
   @ReactMethod
@@ -49,138 +66,208 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
 
   @ReactMethod
   public void sysOnResume() {
-    mCGfpInterface.sysOnResume();
+    if (mCGfpInterface != null) {
+      mCGfpInterface.sysOnResume();
+    }
   }
 
   @ReactMethod
   public void fpiOpenBT(Callback cb) {
-    boolean ret = mCGfpInterface.fpiOpenBT();
-    if (cb != null) {
-      cb.invoke(ret);
+    if (mCGfpInterface != null) {
+      boolean ret = mCGfpInterface.fpiOpenBT();
+      if (cb != null) {
+        cb.invoke(ret);
+      }
+    } else {
+      if (cb != null) {
+        cb.invoke(-1);
+      }
     }
   }
 
   @ReactMethod
   public void sysCloseBT() {
-    mCGfpInterface.sysCloseBT();
+    if (mCGfpInterface != null) {
+      mCGfpInterface.sysCloseBT();
+    }
   }
 
   @ReactMethod
   public void fpiConnectBT(String btName, Callback cb) {
-    int ret = mCGfpInterface.fpiConnectBT(btName);
-    if (cb != null) {
-      cb.invoke(ret);
+    if (mCGfpInterface != null) {
+      int ret = mCGfpInterface.fpiConnectBT(btName);
+      if (cb != null) {
+        cb.invoke(ret);
+      }
+    } else {
+      if (cb != null) {
+        cb.invoke(-1);
+      }
     }
   }
 
   @ReactMethod
   public void fpiDisconnectBT() {
-    mCGfpInterface.fpiDisconnectBT();
+    if (mCGfpInterface != null) {
+      mCGfpInterface.fpiDisconnectBT();
+    }
   }
 
   @ReactMethod
   public void fpiCheckBTOpened(Callback cb) {
-    boolean ret = mCGfpInterface.sysCheckBTOpened();
-    if (cb != null) {
-      cb.invoke(ret);
+    if (mCGfpInterface != null) {
+      boolean ret = mCGfpInterface.sysCheckBTOpened();
+      if (cb != null) {
+        cb.invoke(ret);
+      }
+    } else {
+      if (cb != null) {
+        cb.invoke(-1);
+      }
     }
   }
 
   @ReactMethod
   public void fpiCheckBTConnected(Callback cb) {
-    boolean ret = mCGfpInterface.sysCheckBTConnected();
-    if (cb != null) {
-      cb.invoke(ret);
+    if (mCGfpInterface != null) {
+      boolean ret = mCGfpInterface.sysCheckBTConnected();
+      if (cb != null) {
+        cb.invoke(ret);
+      }
+    } else {
+      if (cb != null) {
+        cb.invoke(-1);
+      }
     }
   }
 
   @ReactMethod
   public void fpiCheckUSBConnected(Callback cb) {
-    boolean ret = mCGfpInterface.sysCheckUSBConnected();
-    if (cb != null) {
-      cb.invoke(ret);
+    if (mCGfpInterface != null) {
+      boolean ret = mCGfpInterface.sysCheckUSBConnected();
+      if (cb != null) {
+        cb.invoke(ret);
+      }
+    } else {
+      if (cb != null) {
+        cb.invoke(-1);
+      }
     }
   }
 
   @ReactMethod
   public void fpiGetVersion() {
-    mCGfpInterface.fpiGetVersion();
+    if (mCGfpInterface != null) {
+      mCGfpInterface.fpiGetVersion();
+    }
   }
 
   @ReactMethod
   public void fpiGetDevSN() {
-    mCGfpInterface.fpiGetDevSN();
+    if (mCGfpInterface != null) {
+      mCGfpInterface.fpiGetDevSN();
+    }
   }
 
   @ReactMethod
   public void fpiSetDevSN(String sn) {
-    mCGfpInterface.fpiSetDevSN(sn);
+    if (mCGfpInterface != null) {
+      mCGfpInterface.fpiSetDevSN(sn);
+    }
   }
 
   @ReactMethod
   public void fpiGetImage(int timeOut) {
-    mCGfpInterface.fpiGetImage(timeOut);
+    if (mCGfpInterface != null) {
+      mCGfpInterface.fpiGetImage(timeOut);
+    }
   }
 
   @ReactMethod
   public void fpiGetDevFTR(int timeOut) {
-    mCGfpInterface.fpiGetDevFTR(timeOut);
+    if (mCGfpInterface != null) {
+      mCGfpInterface.fpiGetDevFTR(timeOut);
+    }
   }
 
   @ReactMethod
   public void fpiGetDevTPT(int timeOut, int fpSaveNum) {
-    mCGfpInterface.fpiGetDevTPT(timeOut, fpSaveNum);
+    if (mCGfpInterface != null) {
+      mCGfpInterface.fpiGetDevTPT(timeOut, fpSaveNum);
+    }
   }
 
   @ReactMethod
   public void fpiGetFeature(int timeOut) {
-    mCGfpInterface.fpiGetFeature(timeOut);
+    if (mCGfpInterface != null) {
+      mCGfpInterface.fpiGetFeature(timeOut);
+    }
   }
 
   @ReactMethod
   public void fpiGetTemplate(int timeOut) {
-    mCGfpInterface.fpiGetTemplate(timeOut);
+    if (mCGfpInterface != null) {
+      mCGfpInterface.fpiGetTemplate(timeOut);
+    }
   }
 
   @ReactMethod
   public void fpiCheckFinger() {
-    mCGfpInterface.fpiCheckFinger();
+    if (mCGfpInterface != null) {
+      mCGfpInterface.fpiCheckFinger();
+    }
   }
 
   @ReactMethod
   public void fpiGetTPTCnt() {
-    mCGfpInterface.fpiGetTPTCnt();
+    if (mCGfpInterface != null) {
+      mCGfpInterface.fpiGetTPTCnt();
+    }
   }
 
   @ReactMethod
   public void fpiDeleteTPT(int fpDelNum) {
-    mCGfpInterface.fpiDeleteTPT(fpDelNum);
+    if (mCGfpInterface != null) {
+      mCGfpInterface.fpiDeleteTPT(fpDelNum);
+    }
   }
 
   @ReactMethod
   public void fpiSetBtName(String btName) {
-    mCGfpInterface.fpiSetBtName(btName);
+    if (mCGfpInterface != null) {
+      mCGfpInterface.fpiSetBtName(btName);
+    }
   }
 
   @ReactMethod
   public void fpiSetSleepTime(int sleepTime) {
-    mCGfpInterface.fpiSetSleepTime(sleepTime);
+    if (mCGfpInterface != null) {
+      mCGfpInterface.fpiSetSleepTime(sleepTime);
+    }
   }
 
   @ReactMethod
   public void fpiDownVerify(String template, String feature) {
-    byte[] tpt = Base64.decode(template, Base64.DEFAULT);
-    byte[] ftr = Base64.decode(feature, Base64.DEFAULT);
-    mCGfpInterface.fpiDownVerify(tpt, ftr);
+    if (mCGfpInterface != null) {
+      byte[] tpt = Base64.decode(template, Base64.DEFAULT);
+      byte[] ftr = Base64.decode(feature, Base64.DEFAULT);
+      mCGfpInterface.fpiDownVerify(tpt, ftr);
+    }
   }
 
   @ReactMethod
   public void sysOneMatch(String template, String feature, Callback cb) {
-    byte[] tpt = Base64.decode(template, Base64.DEFAULT);
-    byte[] ftr = Base64.decode(feature, Base64.DEFAULT);
-    int score = mCGfpInterface.sysOneMatch(tpt, ftr);
-    if (cb != null) {
-      cb.invoke(score);
+    if (mCGfpInterface != null) {
+      byte[] tpt = Base64.decode(template, Base64.DEFAULT);
+      byte[] ftr = Base64.decode(feature, Base64.DEFAULT);
+      int score = mCGfpInterface.sysOneMatch(tpt, ftr);
+      if (cb != null) {
+        cb.invoke(score);
+      }
+    } else {
+      if (cb != null) {
+        cb.invoke(-1);
+      }
     }
   }
 
