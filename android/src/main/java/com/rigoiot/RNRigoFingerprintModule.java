@@ -35,7 +35,7 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
   }
 
   @ReactMethod
-  public void initialize() {
+  public void init() {
     mCGfpInterface = new GfpInterface(reactContext, mFpHandler);
   }
 
