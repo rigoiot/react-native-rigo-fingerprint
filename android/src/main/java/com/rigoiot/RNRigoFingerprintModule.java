@@ -297,7 +297,7 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
           WritableMap map = Arguments.createMap();
           map.putInt("error", error);
           map.putInt("type", msg.what);
-          sendEvent("event", map);
+          sendEvent("rigoiotFingerPrintEvent", map);
           break;
         }
         case 0xA1: // public int fpiConnectBT(String strBTName)
@@ -306,7 +306,7 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
           WritableMap map = Arguments.createMap();
           map.putInt("btStatus", btStatus);
           map.putInt("type", msg.what);
-          sendEvent("event", map);
+          sendEvent("rigoiotFingerPrintEvent", map);
           break;
         }
         case 0xA4:  // public void fpiGetFeature (int iTimeOut)
@@ -319,7 +319,7 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
             map.putString("fpFeature", Base64.encodeToString(fpFeature, Base64.DEFAULT));
           }
           map.putInt("type", msg.what);
-          sendEvent("event", map);
+          sendEvent("rigoiotFingerPrintEvent", map);
           break;
         }
         case 0xA5:  // public void fpiGetTemplate (int iTimeOut)
@@ -332,7 +332,7 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
             map.putString("fpTemplate", Base64.encodeToString(fpTemplate, Base64.DEFAULT));
           }
           map.putInt("type", msg.what);
-          sendEvent("event", map);
+          sendEvent("rigoiotFingerPrintEvent", map);
           break;
         }
         case 0xB0:  // public void fpiGetVersion()
@@ -340,7 +340,7 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
           WritableMap map = Arguments.createMap();
           map.putString("devVer", msg.getData().getString("FPIGetDevVer"));
           map.putInt("type", msg.what);
-          sendEvent("event", map);
+          sendEvent("rigoiotFingerPrintEvent", map);
           break;
         }
         case 0xB1:  // public void fpiGetDevSN()
@@ -348,7 +348,7 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
           WritableMap map = Arguments.createMap();
           map.putString("devSN", msg.getData().getString("FPIGetDevSN"));
           map.putInt("type", msg.what);
-          sendEvent("event", map);
+          sendEvent("rigoiotFingerPrintEvent", map);
           break;
         }
         case 0xB2:  // public void fpiSetDevSN(String strSN)
@@ -356,7 +356,7 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
           WritableMap map = Arguments.createMap();
           map.putString("devSN", msg.getData().getString("FPISetDevSN"));
           map.putInt("type", msg.what);
-          sendEvent("event", map);
+          sendEvent("rigoiotFingerPrintEvent", map);
           break;
         }
         case 0xB3:  // public void fpiGetImage(int iTimeOut)
@@ -369,7 +369,7 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
             map.putString("fpImage", Base64.encodeToString(fpImage, Base64.DEFAULT));
           }
           map.putInt("type", msg.what);
-          sendEvent("event", map);
+          sendEvent("rigoiotFingerPrintEvent", map);
           break;
         }
         case 0xB4:  // public void fpiGetDevFTR(int iTimeOut)
@@ -382,7 +382,7 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
             map.putString("fpFeature", Base64.encodeToString(fpFeature, Base64.DEFAULT));
           }
           map.putInt("type", msg.what);
-          sendEvent("event", map);
+          sendEvent("rigoiotFingerPrintEvent", map);
           break;
         }
         case 0xB5:  // public void fpiGetDevTPT(int iTimeOut, int iFpSaveNum)
@@ -395,7 +395,7 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
             map.putString("fpTemplate", Base64.encodeToString(fpTemplate, Base64.DEFAULT));
           }
           map.putInt("type", msg.what);
-          sendEvent("event", map);
+          sendEvent("rigoiotFingerPrintEvent", map);
           break;
         }
         case 0xB6: // public void fpiDownVerify(byte[] byteArryTPT, byte[] byteArryFTR)
@@ -404,7 +404,7 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
           WritableMap map = Arguments.createMap();
           map.putInt("downVerify", downVerify);
           map.putInt("type", msg.what);
-          sendEvent("event", map);
+          sendEvent("rigoiotFingerPrintEvent", map);
           break;
         }
         case 0xB7:  // public void fpiSearchMatch(int iTimeOut)
@@ -413,7 +413,7 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
           WritableMap map = Arguments.createMap();
           map.putInt("searchMatch", searchMatch);
           map.putInt("type", msg.what);
-          sendEvent("event", map);
+          sendEvent("rigoiotFingerPrintEvent", map);
           break;
         }
         case 0xB8:  // public void fpiCheckFinger()
@@ -422,7 +422,7 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
           WritableMap map = Arguments.createMap();
           map.putInt("checkFinger", checkFinger);
           map.putInt("type", msg.what);
-          sendEvent("event", map);
+          sendEvent("rigoiotFingerPrintEvent", map);
           break;
         }
         case 0xB9:  // EncryptTest --Reserved
@@ -435,7 +435,7 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
           WritableMap map = Arguments.createMap();
           map.putInt("fpTPTCount", fpTPTCount);
           map.putInt("type", msg.what);
-          sendEvent("event", map);
+          sendEvent("rigoiotFingerPrintevent", map);
           break;
         }
         case 0xBC: // public void fpiDeleteTPT(int iFpDelNum)
@@ -444,7 +444,7 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
           WritableMap map = Arguments.createMap();
           map.putInt("deleteTPT", deleteTPT);
           map.putInt("type", msg.what);
-          sendEvent("event", map);
+          sendEvent("rigoiotFingerPrintEvent", map);
           break;
         }
         case 0xBD: {
@@ -452,7 +452,7 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
           WritableMap map = Arguments.createMap();
           map.putInt("setBtName", setBtName);
           map.putInt("type", msg.what);
-          sendEvent("event", map);
+          sendEvent("rigoiotFingerPrintEvent", map);
           break;
         }
         case 0xBE: {
@@ -460,7 +460,7 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
           WritableMap map = Arguments.createMap();
           map.putInt("setSleepTime", setSleepTime);
           map.putInt("type", msg.what);
-          sendEvent("event", map);
+          sendEvent("rigoiotFingerPrintEvent", map);
           break;
         }
       }
