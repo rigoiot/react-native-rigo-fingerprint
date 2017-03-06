@@ -1,6 +1,7 @@
 
 package com.rigoiot;
 
+import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.Message;
 import android.support.annotation.Nullable;
@@ -10,6 +11,7 @@ import android.os.Build;
 import android.util.Log;
 
 import com.facebook.react.bridge.Arguments;
+import com.facebook.react.bridge.LifecycleEventListener;
 import com.facebook.react.bridge.ReactContext;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
@@ -22,6 +24,10 @@ import com.wellcom.verify.GfpInterface;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.atomic.AtomicInteger;
 
 enum FingerprintState {
   IDLE,
@@ -34,7 +40,7 @@ enum FingerprintState {
   READY
 }
 
-public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
+public class RNRigoFingerprintModule extends ReactContextBaseJavaModule implements LifecycleEventListener {
 
   private static final String TAG = "RNRigoFingerprintModule";
 
@@ -48,6 +54,8 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
   public RNRigoFingerprintModule(ReactApplicationContext reactContext) {
     super(reactContext);
     this.reactContext = reactContext;
+
+    reactContext.addLifecycleEventListener(this);
   }
 
   @Override
@@ -58,11 +66,51 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
   @Override
   public Map<String, Object> getConstants() {
     final Map<String, Object> constants = new HashMap<>();
-    constants.put("state", mState);
+    constants.put("state", mState.toString());
     constants.put("version", mVer);
     constants.put("isEmulator", isEmulator());
     return constants;
   }
+
+  @Override
+  public void initialize() {
+    if (!isEmulator()) {
+      if (mCGfpInterface == null) {
+        mCGfpInterface = new GfpInterface(reactContext, mFpHandler);
+      }
+    }
+    setState(FingerprintState.IDLE);
+  }
+
+  @Override
+  public void onHostResume() {
+      // Activity `onResume`
+    setState(FingerprintState.IDLE);
+    if (mCGfpInterface != null) {
+      mCGfpInterface.sysOnResume();
+    } else if (!isEmulator()) {
+      if (mCGfpInterface == null) {
+        mCGfpInterface = new GfpInterface(reactContext, mFpHandler);
+      }
+    }
+  }
+
+  @Override
+  public void onHostPause() {
+      // Activity `onPause`
+  }
+
+  @Override
+  public void onHostDestroy() {
+      // Activity `onDestroy`
+    setState(FingerprintState.IDLE);
+    if (mCGfpInterface != null) {
+      mCGfpInterface.sysExit();
+      mCGfpInterface = null;
+    }
+  }
+
+
   /**
    * Utility methods related to physical devies and emulators.
    */
@@ -86,7 +134,9 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
   public void init() {
     Log.v(TAG, "init()");
     if (!isEmulator()) {
-      mCGfpInterface = new GfpInterface(reactContext, mFpHandler);
+      if (mCGfpInterface == null) {
+        mCGfpInterface = new GfpInterface(reactContext, mFpHandler);
+      }
       setState(FingerprintState.IDLE);
     }
   }
@@ -339,6 +389,200 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
     }
   }
 
+  private class FPTimerTask extends TimerTask {
+    Runnable mRunner;
+    Timer mTimer;
+    FPTimerTask(Runnable runner, Timer timer) {
+      mRunner = runner;
+      mTimer = timer;
+    }
+    public void run() {
+      mTimer.cancel(); //Terminate the timer thread
+      if (mRunner != null) {
+        mRunner.run();
+      }
+    }
+  }
+
+  @ReactMethod
+  public void checkConnected(final String deviceName, final int timeout, final Callback cb) {
+    final AtomicInteger retry = new AtomicInteger(5);
+
+    if (mCGfpInterface == null) {
+      mCGfpInterface = new GfpInterface(reactContext, mFpHandler);
+    }
+
+    final Timer timer = new Timer();
+
+    final FPEventListener listener = new FPEventListener() {
+      @Override
+      public void onMessage(Message msg) {
+        if (msg.what == 0xA0) {
+          int error = msg.getData().getInt("FPIGetError");
+          if (error == 0) {
+            AsyncTask.execute(new Runnable() {
+              @Override
+              public void run() {
+                fpiGetVersion();
+              }
+            });
+          } else if (retry.decrementAndGet() > 0) {
+            AsyncTask.execute(new Runnable() {
+              @Override
+              public void run() {
+                fpiOpenBT(null);
+                fpiConnectBT(deviceName, null);
+                fpiGetVersion();
+              }
+            });
+          } else {
+            mFpHandler.removeFPEventListener(this);
+            timer.cancel();
+            cb.invoke(0);
+          }
+        } else if (msg.what == 0xA1) {
+          int btStatus = msg.getData().getInt("FPIBTStatus");
+          if (btStatus == 1) {
+            AsyncTask.execute(new Runnable() {
+              @Override
+              public void run() {
+                fpiGetVersion();
+              }
+            });
+          } else {
+            if (retry.decrementAndGet() > 0) {
+              AsyncTask.execute(new Runnable() {
+                @Override
+                public void run() {
+                  fpiOpenBT(null);
+                  fpiConnectBT(deviceName, null);
+                  fpiGetVersion();
+                }
+              });
+            } else {
+              mFpHandler.removeFPEventListener(this);
+              timer.cancel();
+              cb.invoke(0);
+            }
+          }
+        } else if (msg.what == 0xB0) {
+          String version = msg.getData().getString("FPIGetDevVer");
+          if (version != null && !version.isEmpty()) {
+            mFpHandler.removeFPEventListener(this);
+            timer.cancel();
+            cb.invoke(true);
+          } else {
+            if (retry.decrementAndGet() > 0) {
+              AsyncTask.execute(new Runnable() {
+                @Override
+                public void run() {
+                  fpiOpenBT(null);
+                  fpiConnectBT(deviceName, null);
+                  fpiGetVersion();
+                }
+              });
+            } else {
+              mFpHandler.removeFPEventListener(this);
+              timer.cancel();
+              cb.invoke(false);
+            }
+          }
+        }
+      }
+    };
+
+    mFpHandler.addFPEventListener(listener);
+
+    // Start timeout timer
+    timer.schedule(new FPTimerTask(new Runnable() {
+      @Override
+      public void run() {
+        mFpHandler.removeFPEventListener(listener);
+        cb.invoke(false);
+      }
+    }, timer), timeout*1000);
+
+    fpiOpenBT(null);
+    fpiConnectBT(deviceName, null);
+    fpiGetVersion();
+  }
+
+  @ReactMethod
+  public void getTemplate(final String deviceName, final int timeout, final Callback cb) {
+    if (mCGfpInterface == null) {
+      cb.invoke(null, 0);
+    }
+
+    final Timer timer = new Timer();
+    final FPEventListener listener = new FPEventListener() {
+      @Override
+      public void onMessage(Message msg) {
+        if (msg.what == 0xB5) {
+          byte[] fpTemplate = (byte[]) msg.obj;
+          int bytesLenTPT = msg.arg1;
+          String template = null;
+          if (bytesLenTPT > 0) {
+            template = Base64.encodeToString(fpTemplate, Base64.DEFAULT);
+          }
+          mFpHandler.removeFPEventListener(this);
+          timer.cancel();
+          cb.invoke(template, bytesLenTPT);
+        }
+      }
+    };
+
+    mFpHandler.addFPEventListener(listener);
+
+    // Start timeout timer
+    timer.schedule(new FPTimerTask(new Runnable() {
+      @Override
+      public void run() {
+        mFpHandler.removeFPEventListener(listener);
+        cb.invoke(null, 0);
+      }
+    }, timer), (timeout + 2)*1000);
+
+    fpiGetDevTPT(timeout > 20 ? 20 : timeout, 0);
+  }
+
+  @ReactMethod
+  public void getFeature(final String deviceName, final int timeout, final Callback cb) {
+    if (mCGfpInterface == null) {
+      cb.invoke(null, 0);
+    }
+
+    final Timer timer = new Timer();
+    final FPEventListener listener = new FPEventListener() {
+      @Override
+      public void onMessage(Message msg) {
+        if (msg.what == 0xB4) {
+          byte[] fpFeature = (byte[]) msg.obj;
+          int bytesLenTPT = msg.arg1;
+          String template = null;
+          if (bytesLenTPT > 0) {
+            template = Base64.encodeToString(fpFeature, Base64.DEFAULT);
+          }
+          mFpHandler.removeFPEventListener(this);
+          timer.cancel();
+          cb.invoke(template, bytesLenTPT);
+        }
+      }
+    };
+
+    mFpHandler.addFPEventListener(listener);
+
+    // Start timeout timer
+    timer.schedule(new FPTimerTask(new Runnable() {
+      @Override
+      public void run() {
+        mFpHandler.removeFPEventListener(listener);
+        cb.invoke(null, 0);
+      }
+    }, timer), (timeout + 2)*1000);
+
+    fpiGetDevFTR(timeout > 20 ? 20 : timeout);
+  }
+
   // @ReactMethod
   // public void sysSearchMatch(int templateCount, String template, String feature, int[] templateID) {
   //   byte[] tpt = Base64.decode(template, Base64.DEFAULT);
@@ -354,16 +598,36 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
         .emit(eventName, params);
   }
 
-  // 蓝牙异步消息处理
-  Handler mFpHandler = new Handler(Looper.getMainLooper()) {
+  public interface FPEventListener {
+    void onMessage(Message msg);
+  }
+
+  public class FPEventHandle extends Handler {
+    private final CopyOnWriteArraySet<FPEventListener> mEventListeners =
+        new CopyOnWriteArraySet<>();
+    public FPEventHandle(Looper looper) {
+      super(looper);
+    }
+
+    public void addFPEventListener(FPEventListener listener) {
+      mEventListeners.add(listener);
+    }
+
+    public void removeFPEventListener(FPEventListener listener) {
+      mEventListeners.remove(listener);
+    }
+
+    @Override
     public void handleMessage(Message msg){
       super.handleMessage(msg);
       Log.v(TAG, "Event: " + msg.toString());
       switch(msg.what) {
         case 0xA0:  // Error message
         {
-          setState(FingerprintState.IDLE);
-           mError = msg.getData().getInt("FPIGetError");
+          mError = msg.getData().getInt("FPIGetError");
+          if (mError < 0) {
+            setState(FingerprintState.IDLE);
+          }
           WritableMap map = Arguments.createMap();
           map.putInt("error", mError);
           map.putInt("type", msg.what);
@@ -557,6 +821,13 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
           break;
         }
       }
+
+      for (FPEventListener listener : mEventListeners) {
+        listener.onMessage(msg);
+      }
     }
-  };
+  }
+
+  // 蓝牙异步消息处理
+  FPEventHandle mFpHandler = new FPEventHandle(Looper.getMainLooper());
 }
