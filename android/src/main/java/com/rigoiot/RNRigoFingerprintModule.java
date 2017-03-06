@@ -7,6 +7,7 @@ import android.support.annotation.Nullable;
 import android.util.Base64;
 import android.os.Looper;
 import android.os.Build;
+import android.util.Log;
 
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.ReactContext;
@@ -19,11 +20,30 @@ import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 import com.wellcom.verify.GfpInterface;
 
+import java.util.HashMap;
+import java.util.Map;
+
+enum FingerprintState {
+  IDLE,
+  INIT,
+  BT_OPENING,
+  BT_OPENED,
+  BT_CONNECTING,
+  BT_CONNECTED,
+  BT_DISCONNECTED,
+  READY
+}
+
 public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
+
+  private static final String TAG = "RNRigoFingerprintModule";
 
   private final ReactApplicationContext reactContext;
 
   private GfpInterface  mCGfpInterface = null;
+  private FingerprintState mState = FingerprintState.IDLE;
+  private String mVer = "";
+  private int mError = 0;
 
   public RNRigoFingerprintModule(ReactApplicationContext reactContext) {
     super(reactContext);
@@ -35,6 +55,14 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
     return "RNRigoFingerprint";
   }
 
+  @Override
+  public Map<String, Object> getConstants() {
+    final Map<String, Object> constants = new HashMap<>();
+    constants.put("state", mState);
+    constants.put("version", mVer);
+    constants.put("isEmulator", isEmulator());
+    return constants;
+  }
   /**
    * Utility methods related to physical devies and emulators.
    */
@@ -49,15 +77,24 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
               || "google_sdk".equals(Build.PRODUCT);
   }
 
+  private  void setState(FingerprintState state) {
+    Log.v(TAG, "State: (" + mState.toString() + ") -> (" + state.toString() + ")");
+    mState = state;
+  }
+
   @ReactMethod
   public void init() {
+    Log.v(TAG, "init()");
     if (!isEmulator()) {
       mCGfpInterface = new GfpInterface(reactContext, mFpHandler);
+      setState(FingerprintState.IDLE);
     }
   }
 
   @ReactMethod
   public void destroy() {
+    Log.v(TAG, "init()");
+    setState(FingerprintState.IDLE);
     if (mCGfpInterface != null) {
       mCGfpInterface.sysExit();
       mCGfpInterface = null;
@@ -66,6 +103,8 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
 
   @ReactMethod
   public void sysOnResume() {
+    Log.v(TAG, "sysOnResume()");
+    setState(FingerprintState.IDLE);
     if (mCGfpInterface != null) {
       mCGfpInterface.sysOnResume();
     }
@@ -73,6 +112,8 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
 
   @ReactMethod
   public void fpiOpenBT(Callback cb) {
+    Log.v(TAG, "fpiOpenBT()");
+    setState(FingerprintState.BT_OPENING);
     if (mCGfpInterface != null) {
       boolean ret = mCGfpInterface.fpiOpenBT();
       if (cb != null) {
@@ -87,6 +128,8 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
 
   @ReactMethod
   public void sysCloseBT() {
+    Log.v(TAG, "sysCloseBT()");
+    setState(FingerprintState.IDLE);
     if (mCGfpInterface != null) {
       mCGfpInterface.sysCloseBT();
     }
@@ -94,6 +137,8 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
 
   @ReactMethod
   public void fpiConnectBT(String btName, Callback cb) {
+    Log.v(TAG, "fpiConnectBT(" + btName + ")");
+    setState(FingerprintState.BT_CONNECTING);
     if (mCGfpInterface != null) {
       int ret = mCGfpInterface.fpiConnectBT(btName);
       if (cb != null) {
@@ -108,6 +153,8 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
 
   @ReactMethod
   public void fpiDisconnectBT() {
+    Log.v(TAG, "fpiDisconnectBT()");
+    setState(FingerprintState.BT_DISCONNECTED);
     if (mCGfpInterface != null) {
       mCGfpInterface.fpiDisconnectBT();
     }
@@ -115,8 +162,10 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
 
   @ReactMethod
   public void fpiCheckBTOpened(Callback cb) {
+    Log.v(TAG, "fpiCheckBTOpened()");
     if (mCGfpInterface != null) {
       boolean ret = mCGfpInterface.sysCheckBTOpened();
+      Log.v(TAG, "fpiCheckBTOpened() -> " + ret);
       if (cb != null) {
         cb.invoke(ret);
       }
@@ -129,8 +178,10 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
 
   @ReactMethod
   public void fpiCheckBTConnected(Callback cb) {
+    Log.v(TAG, "fpiCheckBTConnected()");
     if (mCGfpInterface != null) {
       boolean ret = mCGfpInterface.sysCheckBTConnected();
+      Log.v(TAG, "fpiCheckBTConnected() -> " + ret);
       if (cb != null) {
         cb.invoke(ret);
       }
@@ -143,8 +194,10 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
 
   @ReactMethod
   public void fpiCheckUSBConnected(Callback cb) {
+    Log.v(TAG, "fpiCheckUSBConnected()");
     if (mCGfpInterface != null) {
       boolean ret = mCGfpInterface.sysCheckUSBConnected();
+      Log.v(TAG, "fpiCheckUSBConnected() -> " + ret);
       if (cb != null) {
         cb.invoke(ret);
       }
@@ -157,6 +210,7 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
 
   @ReactMethod
   public void fpiGetVersion() {
+    Log.v(TAG, "fpiGetVersion()");
     if (mCGfpInterface != null) {
       mCGfpInterface.fpiGetVersion();
     }
@@ -164,6 +218,7 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
 
   @ReactMethod
   public void fpiGetDevSN() {
+    Log.v(TAG, "fpiGetDevSN()");
     if (mCGfpInterface != null) {
       mCGfpInterface.fpiGetDevSN();
     }
@@ -171,6 +226,7 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
 
   @ReactMethod
   public void fpiSetDevSN(String sn) {
+    Log.v(TAG, "fpiGetDevSN(" + sn + ")");
     if (mCGfpInterface != null) {
       mCGfpInterface.fpiSetDevSN(sn);
     }
@@ -178,6 +234,7 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
 
   @ReactMethod
   public void fpiGetImage(int timeOut) {
+    Log.v(TAG, "fpiGetImage(" + timeOut + ")");
     if (mCGfpInterface != null) {
       mCGfpInterface.fpiGetImage(timeOut);
     }
@@ -185,6 +242,7 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
 
   @ReactMethod
   public void fpiGetDevFTR(int timeOut) {
+    Log.v(TAG, "fpiGetDevFTR(" + timeOut + ")");
     if (mCGfpInterface != null) {
       mCGfpInterface.fpiGetDevFTR(timeOut);
     }
@@ -192,6 +250,7 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
 
   @ReactMethod
   public void fpiGetDevTPT(int timeOut, int fpSaveNum) {
+    Log.v(TAG, "fpiGetDevTPT(" + timeOut + ", " + fpSaveNum + ")");
     if (mCGfpInterface != null) {
       mCGfpInterface.fpiGetDevTPT(timeOut, fpSaveNum);
     }
@@ -199,6 +258,7 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
 
   @ReactMethod
   public void fpiGetFeature(int timeOut) {
+    Log.v(TAG, "fpiGetFeature(" + timeOut + ")");
     if (mCGfpInterface != null) {
       mCGfpInterface.fpiGetFeature(timeOut);
     }
@@ -206,6 +266,7 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
 
   @ReactMethod
   public void fpiGetTemplate(int timeOut) {
+    Log.v(TAG, "fpiGetTemplate(" + timeOut + ")");
     if (mCGfpInterface != null) {
       mCGfpInterface.fpiGetTemplate(timeOut);
     }
@@ -213,6 +274,7 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
 
   @ReactMethod
   public void fpiCheckFinger() {
+    Log.v(TAG, "fpiCheckFinger()");
     if (mCGfpInterface != null) {
       mCGfpInterface.fpiCheckFinger();
     }
@@ -220,6 +282,7 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
 
   @ReactMethod
   public void fpiGetTPTCnt() {
+    Log.v(TAG, "fpiGetTPTCnt()");
     if (mCGfpInterface != null) {
       mCGfpInterface.fpiGetTPTCnt();
     }
@@ -227,6 +290,7 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
 
   @ReactMethod
   public void fpiDeleteTPT(int fpDelNum) {
+    Log.v(TAG, "fpiDeleteTPT()");
     if (mCGfpInterface != null) {
       mCGfpInterface.fpiDeleteTPT(fpDelNum);
     }
@@ -234,6 +298,7 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
 
   @ReactMethod
   public void fpiSetBtName(String btName) {
+    Log.v(TAG, "fpiSetBtName(" + btName + ")");
     if (mCGfpInterface != null) {
       mCGfpInterface.fpiSetBtName(btName);
     }
@@ -241,6 +306,7 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
 
   @ReactMethod
   public void fpiSetSleepTime(int sleepTime) {
+    Log.v(TAG, "fpiSetSleepTime(" + sleepTime + ")");
     if (mCGfpInterface != null) {
       mCGfpInterface.fpiSetSleepTime(sleepTime);
     }
@@ -248,6 +314,7 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
 
   @ReactMethod
   public void fpiDownVerify(String template, String feature) {
+    Log.v(TAG, "fpiDownVerify(" + template + ", " + feature + ")");
     if (mCGfpInterface != null) {
       byte[] tpt = Base64.decode(template, Base64.DEFAULT);
       byte[] ftr = Base64.decode(feature, Base64.DEFAULT);
@@ -257,6 +324,7 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
 
   @ReactMethod
   public void sysOneMatch(String template, String feature, Callback cb) {
+    Log.v(TAG, "sysOneMatch(" + template + ", " + feature + ")");
     if (mCGfpInterface != null) {
       byte[] tpt = Base64.decode(template, Base64.DEFAULT);
       byte[] ftr = Base64.decode(feature, Base64.DEFAULT);
@@ -290,12 +358,14 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
   Handler mFpHandler = new Handler(Looper.getMainLooper()) {
     public void handleMessage(Message msg){
       super.handleMessage(msg);
+      Log.v(TAG, "Event: " + msg.toString());
       switch(msg.what) {
         case 0xA0:  // Error message
         {
-          int error = msg.getData().getInt("FPIGetError");
+          setState(FingerprintState.IDLE);
+           mError = msg.getData().getInt("FPIGetError");
           WritableMap map = Arguments.createMap();
-          map.putInt("error", error);
+          map.putInt("error", mError);
           map.putInt("type", msg.what);
           sendEvent("rigoiotFingerPrintEvent", map);
           break;
@@ -303,6 +373,11 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
         case 0xA1: // public int fpiConnectBT(String strBTName)
         {
           int btStatus = msg.getData().getInt("FPIBTStatus");
+          if (btStatus == 1) {
+            setState(FingerprintState.BT_CONNECTED);
+          } else {
+            setState(FingerprintState.BT_DISCONNECTED);
+          }
           WritableMap map = Arguments.createMap();
           map.putInt("btStatus", btStatus);
           map.putInt("type", msg.what);
@@ -311,6 +386,7 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
         }
         case 0xA4:  // public void fpiGetFeature (int iTimeOut)
         {
+          setState(FingerprintState.READY);
           byte[] fpFeature = (byte[]) msg.obj;
           int bytesLenFTR = msg.arg1;
           WritableMap map = Arguments.createMap();
@@ -324,6 +400,7 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
         }
         case 0xA5:  // public void fpiGetTemplate (int iTimeOut)
         {
+          setState(FingerprintState.READY);
           byte[] fpTemplate = (byte[]) msg.obj;
           int bytesLenTPT = msg.arg1;
           WritableMap map = Arguments.createMap();
@@ -337,14 +414,17 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
         }
         case 0xB0:  // public void fpiGetVersion()
         {
+          setState(FingerprintState.READY);
           WritableMap map = Arguments.createMap();
-          map.putString("devVer", msg.getData().getString("FPIGetDevVer"));
+          mVer = msg.getData().getString("FPIGetDevVer");
+          map.putString("devVer", mVer);
           map.putInt("type", msg.what);
           sendEvent("rigoiotFingerPrintEvent", map);
           break;
         }
         case 0xB1:  // public void fpiGetDevSN()
         {
+          setState(FingerprintState.READY);
           WritableMap map = Arguments.createMap();
           map.putString("devSN", msg.getData().getString("FPIGetDevSN"));
           map.putInt("type", msg.what);
@@ -353,6 +433,7 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
         }
         case 0xB2:  // public void fpiSetDevSN(String strSN)
         {
+          setState(FingerprintState.READY);
           WritableMap map = Arguments.createMap();
           map.putString("devSN", msg.getData().getString("FPISetDevSN"));
           map.putInt("type", msg.what);
@@ -361,6 +442,7 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
         }
         case 0xB3:  // public void fpiGetImage(int iTimeOut)
         {
+          setState(FingerprintState.READY);
           byte[] fpImage = (byte[]) msg.obj;
           int byteLenIMG = msg.arg1;
           WritableMap map = Arguments.createMap();
@@ -374,6 +456,7 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
         }
         case 0xB4:  // public void fpiGetDevFTR(int iTimeOut)
         {
+          setState(FingerprintState.READY);
           byte[] fpFeature = (byte[]) msg.obj;
           int bytesLenFTR = msg.arg1;
           WritableMap map = Arguments.createMap();
@@ -387,6 +470,7 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
         }
         case 0xB5:  // public void fpiGetDevTPT(int iTimeOut, int iFpSaveNum)
         {
+          setState(FingerprintState.READY);
           byte[] fpTemplate = (byte[]) msg.obj;
           int bytesLenTPT = msg.arg1;
           WritableMap map = Arguments.createMap();
@@ -400,6 +484,7 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
         }
         case 0xB6: // public void fpiDownVerify(byte[] byteArryTPT, byte[] byteArryFTR)
         {
+          setState(FingerprintState.READY);
           int downVerify = msg.getData().getInt("FPIDownVerify");
           WritableMap map = Arguments.createMap();
           map.putInt("downVerify", downVerify);
@@ -409,6 +494,7 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
         }
         case 0xB7:  // public void fpiSearchMatch(int iTimeOut)
         {
+          setState(FingerprintState.READY);
           int searchMatch = msg.getData().getInt("FPISearchMatch");
           WritableMap map = Arguments.createMap();
           map.putInt("searchMatch", searchMatch);
@@ -418,6 +504,7 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
         }
         case 0xB8:  // public void fpiCheckFinger()
         {
+          setState(FingerprintState.READY);
           int checkFinger = msg.getData().getInt("FPICheckFinger");
           WritableMap map = Arguments.createMap();
           map.putInt("checkFinger", checkFinger);
@@ -431,6 +518,7 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
           break;
         case 0xBB: // public void fpiGetTPTCnt()
         {
+          setState(FingerprintState.READY);
           int fpTPTCount = msg.getData().getInt("FPIGetTPTCnt");
           WritableMap map = Arguments.createMap();
           map.putInt("fpTPTCount", fpTPTCount);
@@ -440,6 +528,7 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
         }
         case 0xBC: // public void fpiDeleteTPT(int iFpDelNum)
         {
+          setState(FingerprintState.READY);
           int deleteTPT = msg.getData().getInt("FPIDeleteTPT");
           WritableMap map = Arguments.createMap();
           map.putInt("deleteTPT", deleteTPT);
@@ -447,7 +536,9 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
           sendEvent("rigoiotFingerPrintEvent", map);
           break;
         }
-        case 0xBD: {
+        case 0xBD:
+        {
+          setState(FingerprintState.READY);
           int setBtName = msg.getData().getInt("FPISetBtName");
           WritableMap map = Arguments.createMap();
           map.putInt("setBtName", setBtName);
@@ -455,7 +546,9 @@ public class RNRigoFingerprintModule extends ReactContextBaseJavaModule {
           sendEvent("rigoiotFingerPrintEvent", map);
           break;
         }
-        case 0xBE: {
+        case 0xBE:
+        {
+          setState(FingerprintState.READY);
           int setSleepTime = msg.getData().getInt("FPISetSleepTime");
           WritableMap map = Arguments.createMap();
           map.putInt("setSleepTime", setSleepTime);
